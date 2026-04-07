@@ -23,7 +23,6 @@ from ..llmapi.tokenizer import TokenizerBase
 from ..llmapi.tracer import global_tracer
 from ..llmapi.utils import _SyncQueue, get_numa_aware_cpu_affinity, logger_debug
 from ..lora_manager import LoraManager
-from ..metrics import RequestEventTiming
 from ..prompt_adapter_manager import PromptAdapterManager
 from ..runtime import ModelConfig
 from ..runtime.model_runner import _engine_config_to_model_config
@@ -34,7 +33,7 @@ from .postproc_worker import (PostprocParams, PostprocWorker,
                               PostprocWorkerConfig)
 from .request import GenerationRequest, LoRARequest, PromptAdapterRequest
 from .result import (GenerationResult, LogProbsResult, ResponseWrapper,
-                    compute_logprobs, get_metrics_dict)
+                     compute_logprobs, get_metrics_dict)
 from .utils import (ErrorResponse, IntraProcessQueue, RequestError,
                     is_llm_response)
 
