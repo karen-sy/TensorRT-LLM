@@ -197,7 +197,8 @@ class PostprocWorker:
             record = self._records.get(client_id)
             should_abort = record._aborted if record else False
             finish_reason = record.outputs[0].finish_reason if (
-                record and record.outputs) else None # pass this through for _handle_response
+                record and record.outputs
+            ) else None  # pass this through for _handle_response
             num_generated_tokens = len(record.outputs[0].token_ids) if (
                 record and record.outputs) else None
             batch.append(

@@ -1107,7 +1107,9 @@ def _process_req_perf_metrics(
     return stat
 
 
-def _build_perf_metrics_dict(req_perf_metrics: tllm.RequestPerfMetrics) -> dict[RequestEventTiming, float]:
+def _build_perf_metrics_dict(
+    req_perf_metrics: tllm.RequestPerfMetrics
+) -> dict[RequestEventTiming, float]:
     if not (req_perf_metrics and req_perf_metrics.timing_metrics):
         return {}
     return {
