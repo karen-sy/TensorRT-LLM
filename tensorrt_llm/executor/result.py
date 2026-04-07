@@ -436,27 +436,17 @@ class GenerationResultBase:
                 self.metrics_dict.update(response.metrics)
 
             if self._done:
-                rpm = response.request_perf_metrics
-                req_perf_metrics_dict = {}
-                if rpm and rpm.timing_metrics:
-                    req_perf_metrics_dict = {
-                        RequestEventTiming.ARRIVAL_TIME:
-                        rpm.timing_metrics.arrival_time.total_seconds(),
-                        RequestEventTiming.FIRST_TOKEN_TIME:
-                        rpm.timing_metrics.first_token_time.total_seconds(),
-                        RequestEventTiming.FIRST_SCHEDULED_TIME:
-                        rpm.timing_metrics.first_scheduled_time.total_seconds(),
-                        RequestEventTiming.LAST_TOKEN_TIME:
-                        rpm.timing_metrics.last_token_time.total_seconds(),
-                        RequestEventTiming.KV_CACHE_TRANSFER_START:
-                        rpm.timing_metrics.kv_cache_transfer_start.
-                        total_seconds(),
-                        RequestEventTiming.KV_CACHE_TRANSFER_END:
-                        rpm.timing_metrics.kv_cache_transfer_end.total_seconds(
-                        ),
-                        RequestEventTiming.KV_CACHE_SIZE:
-                        rpm.timing_metrics.kv_cache_size,
-                    }
+                req_perf_metrics_dict = _build_perf_metrics_dict(
+                    response.request_perf_metrics)
+                # On the non-streaming path, response.res is not a CompletionOutput, so
+                # token_ids/finish_reason must be carried separately and applied here.
+                if not isinstance(response.res, CompletionOutput):
+                    if response.finish_reason is not None:
+                        self._outputs[0].finish_reason = response.finish_reason
+                    if response.num_generated_tokens is not None:
+                        self._outputs[0].token_ids = [
+                            -1
+                        ] * response.num_generated_tokens  # placeholder for tracing token_ids.length
                 self.do_tracing(self._outputs[0], req_perf_metrics_dict)
 
             if response.should_abort and not self._aborted:
@@ -1093,3 +1083,37 @@ def _process_req_perf_metrics(
         stat.update({MetricNames.TPOT: tpot})
     stat = dict(filter(lambda item: item[1] > 0, stat.items()))
     return stat
+
+
+def _build_perf_metrics_dict(req_perf_metrics: tllm.RequestPerfMetrics) -> dict[RequestEventTiming, float]:
+    if not (req_perf_metrics and req_perf_metrics.timing_metrics):
+        return {}
+    return {
+        RequestEventTiming.ARRIVAL_TIME:
+        req_perf_metrics.timing_metrics.arrival_time.total_seconds(),
+        RequestEventTiming.FIRST_TOKEN_TIME:
+        req_perf_metrics.timing_metrics.first_token_time.total_seconds(),
+        RequestEventTiming.FIRST_SCHEDULED_TIME:
+        req_perf_metrics.timing_metrics.first_scheduled_time.total_seconds(),
+        RequestEventTiming.LAST_TOKEN_TIME:
+        req_perf_metrics.timing_metrics.last_token_time.total_seconds(),
+        RequestEventTiming.KV_CACHE_TRANSFER_START:
+        req_perf_metrics.timing_metrics.kv_cache_transfer_start.total_seconds(),
+        RequestEventTiming.KV_CACHE_TRANSFER_END:
+        req_perf_metrics.timing_metrics.kv_cache_transfer_end.total_seconds(),
+        RequestEventTiming.KV_CACHE_SIZE:
+        req_perf_metrics.timing_metrics.kv_cache_size,
+    }
+
+
+def get_metrics_dict(
+        response: tllm.Response) -> dict[RequestEventTiming, float]:
+    req_perf_metrics = None
+    res = response.result
+    if res:
+        if hasattr(res, '_result'):
+            if result := res.get_result():
+                req_perf_metrics = result.request_perf_metrics
+        else:
+            req_perf_metrics = res.request_perf_metrics
+    return _build_perf_metrics_dict(req_perf_metrics)

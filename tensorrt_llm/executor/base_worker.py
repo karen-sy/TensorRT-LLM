@@ -34,7 +34,7 @@ from .postproc_worker import (PostprocParams, PostprocWorker,
                               PostprocWorkerConfig)
 from .request import GenerationRequest, LoRARequest, PromptAdapterRequest
 from .result import (GenerationResult, LogProbsResult, ResponseWrapper,
-                     compute_logprobs)
+                    compute_logprobs, get_metrics_dict)
 from .utils import (ErrorResponse, IntraProcessQueue, RequestError,
                     is_llm_response)
 
@@ -977,47 +977,13 @@ def _send_rsp(
         raise ValueError(f"Unknown response type: {response}")
 
 
-def _get_metrics_dict(
-        response: tllm.Response) -> dict[RequestEventTiming, float]:
-    req_perf_metrics, metrics_dict = None, {}
-    res = response.result
-    if res:
-        if hasattr(res, '_result'):
-            if result := res.get_result():
-                req_perf_metrics = result.request_perf_metrics
-        else:
-            req_perf_metrics = res.request_perf_metrics
-        if req_perf_metrics and req_perf_metrics.timing_metrics:
-            metrics_dict = {
-                RequestEventTiming.ARRIVAL_TIME:
-                req_perf_metrics.timing_metrics.arrival_time.total_seconds(),
-                RequestEventTiming.FIRST_TOKEN_TIME:
-                req_perf_metrics.timing_metrics.first_token_time.total_seconds(
-                ),
-                RequestEventTiming.FIRST_SCHEDULED_TIME:
-                req_perf_metrics.timing_metrics.first_scheduled_time.
-                total_seconds(),
-                RequestEventTiming.LAST_TOKEN_TIME:
-                req_perf_metrics.timing_metrics.last_token_time.total_seconds(),
-                RequestEventTiming.KV_CACHE_TRANSFER_START:
-                req_perf_metrics.timing_metrics.kv_cache_transfer_start.
-                total_seconds(),
-                RequestEventTiming.KV_CACHE_TRANSFER_END:
-                req_perf_metrics.timing_metrics.kv_cache_transfer_end.
-                total_seconds(),
-                RequestEventTiming.KV_CACHE_SIZE:
-                req_perf_metrics.timing_metrics.kv_cache_size,
-            }
-    return metrics_dict
-
-
 def _maybe_wrap_response(
         worker,
         response: tllm.Response,
         is_pytorch_backend=False) -> Union[tllm.Response, ResponseWrapper]:
 
     logprobs_result = _get_logprobs(worker, response, is_pytorch_backend)
-    req_perf_metrics = _get_metrics_dict(response)
+    req_perf_metrics = get_metrics_dict(response)
     if logprobs_result or req_perf_metrics:
         response = ResponseWrapper(response, logprobs_result, req_perf_metrics)
     return response
