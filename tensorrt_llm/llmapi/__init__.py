@@ -14,8 +14,9 @@ from .llm_args import (AttentionDpConfig, AutoDecodingConfig, BatchingType,
                        ExtendedRuntimePerfKnobConfig, KvCacheConfig, LlmArgs,
                        LookaheadDecodingConfig, MedusaDecodingConfig, MoeConfig,
                        MTPDecodingConfig, NGramDecodingConfig,
-                       PARDDecodingConfig, RocketSparseAttentionConfig,
-                       SADecodingConfig, SaveHiddenStatesDecodingConfig,
+                       PARDDecodingConfig, PrometheusMetricsConfig,
+                       RocketSparseAttentionConfig, SADecodingConfig,
+                       SaveHiddenStatesDecodingConfig,
                        SchedulerConfig, SkipSoftmaxAttentionConfig,
                        TorchCompileConfig, TorchLlmArgs, TrtLlmArgs,
                        UserProvidedDecodingConfig)
@@ -76,4 +77,5 @@ __all__ = [
     'RocketSparseAttentionConfig',
     'DeepSeekSparseAttentionConfig',
     'SkipSoftmaxAttentionConfig',
+    'PrometheusMetricsConfig',
 ]
